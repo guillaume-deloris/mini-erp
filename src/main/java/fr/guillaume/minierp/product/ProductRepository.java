@@ -5,6 +5,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +52,15 @@ public class ProductRepository
     }
 
     public Product create (Product product) {
+
+        if (referenceExists(product.getReference(), product.getId())) {
+            throw new WebApplicationException(
+                    Response.status(Response.Status.CONFLICT)
+                            .entity(Map.of("error", "The reference " + product.getReference() + " already exists"))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build());
+        }
+
         product.setId(sequence.incrementAndGet());
         products.put(product.getId(), product);
         return product;
@@ -58,9 +72,26 @@ public class ProductRepository
         if (!products.containsKey(id)) {
             return Optional.empty();
         }
+        if (referenceExists(product.getReference(), id)) {
+            throw new WebApplicationException(
+                    Response.status(Response.Status.CONFLICT)
+                            .entity(Map.of("error", "The reference " + product.getReference() + " already exists"))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build());
+        }
         product.setId(id);
         products.put(id, product);
         return Optional.of(product);
+    }
+
+    private boolean referenceExists(String reference, Long excludedId) {
+        for (Product existing : products.values()) {
+            if (existing.getReference().equalsIgnoreCase(reference)
+                    && !existing.getId().equals(excludedId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean delete(Long id) {
