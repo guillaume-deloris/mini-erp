@@ -97,4 +97,22 @@ public class ProductRepository
     public boolean delete(Long id) {
         return products.remove(id) != null;
     }
+
+    public synchronized Optional<Product> updateStock(Long id, int delta) {
+        Product product = products.get(id);
+        if (product == null) {
+            return Optional.empty();
+        }
+        int newStock = product.getStock() + delta;
+        if (newStock < 0) {
+            throw new BadRequestException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of("error", "Insufficient stock: " + product.getStock()
+                                    + " available, " + (-delta) + " requested"))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build());
+        }
+        product.setStock(newStock);
+        return Optional.of(product);
+    }
 }

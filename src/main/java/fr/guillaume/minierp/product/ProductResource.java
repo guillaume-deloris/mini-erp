@@ -38,7 +38,7 @@ public class ProductResource {
             .orElseThrow(() -> new NotFoundException("Product "+ id + "not found."));
     }*/
 
-
+    //Search with a filter on the name
     //GET /api/products?name=vis
     @GET
     @Path ("/")
@@ -62,10 +62,10 @@ public class ProductResource {
                 .toList();
     }
 
+    //Product creation
     //POST /api/products (JSPN body -> Product object, thanks to JSON-B)
     @POST
     public Response create(Product product, @Context UriInfo uriInfo) {
-
         if (product.getStock() < 0 || product.getName() == null) {
             throw new BadRequestException(
                     Response.status(Response.Status.BAD_REQUEST)
@@ -78,6 +78,22 @@ public class ProductResource {
                 .path(String.valueOf(created.getId()))
                 .build();
         return Response.created(location).entity(created).build();
+    }
+
+    //Stock update
+    //POST /api/products/{id}/stock?delta=-10
+    @POST
+    @Path("/{id}/stock")
+    public Product updateStock(@PathParam("id") Long id, @QueryParam("delta") Integer delta) {
+        if (delta == null) {
+            throw new BadRequestException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of("error", "The delta parameter is required"))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build());
+        }
+        return repository.updateStock(id, delta)
+                .orElseThrow(() -> new NotFoundException("Product " + id + " not found."));
     }
 
     //PUT /api/products/1
