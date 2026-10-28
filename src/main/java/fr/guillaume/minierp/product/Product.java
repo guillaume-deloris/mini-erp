@@ -1,6 +1,20 @@
 package fr.guillaume.minierp.product;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+/**
+ * A product of the catalog, mapped to the "product" table.
+ */
+@Entity //announces a table
+@Table(name = "product") //the name of the table
 public class Product {
+    // BIGSERIAL in PostgreSQL: the database generates the id
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) //Primary key
     private Long id;
     private String reference;
     private String name;

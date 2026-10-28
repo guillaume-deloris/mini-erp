@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,42 +25,23 @@ public class ProductResource {
     @Inject
     private ProductRepository repository;
 
-    //GET /api/products
-    @GET
-    public List<Product> list() {
-        return repository.findAll();
-    }
-
     //GET /api/products/
-    /*@GET
+    @GET
     @Path ("/{id}")
     public Product get(@PathParam("id") Long id) {
         return repository.findById(id)
             .orElseThrow(() -> new NotFoundException("Product "+ id + "not found."));
-    }*/
+    }
 
-    //Search with a filter on the name
-    //GET /api/products?name=vis
+    // GET /api/products            -> all products
+    // GET /api/products?name=vis   -> filtered in the database
+    // curl "http://localhost:8080/mini-erp/api/products/name?name=VIS"
     @GET
-    @Path ("/")
     public List<Product> list(@QueryParam("name") String name) {
-        List<Product> all = repository.findAll();
         if (name == null || name.isBlank()) {
-            return all;
+            return repository.findAll();
         }
-        String search = name.toLowerCase();
-        /*List<Product> result = new ArrayList<>();
-        for (Product product : all) {
-            if (product.getName().toLowerCase().contains(search)) {
-                result.add(product);
-            }
-        }
-        return result;*/
-
-        // ou avec un stream :
-        return all.stream ()
-                .filter(product -> product.getName().toLowerCase().contains(search))
-                .toList();
+        return repository.findByName(name);
     }
 
     //Product creation

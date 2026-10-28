@@ -16,9 +16,9 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String hello(@QueryParam("lang") @DefaultValue("en") String lang) {
         if ("fr".equals(lang)) {
-            return "Bonjour depuis Payara";
+            return "Bonjour depuis Payara FR";
         }
-        return "Hello from Payara";
+        return "Hello from Payara EN";
     }
 
     // GET /api/hello/Guillaume -> JSON, serialized automatically by JSON-B
