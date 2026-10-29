@@ -8,6 +8,8 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +45,9 @@ public class ProductRepository {
         if (referenceExists(product.getReference(), null)) {
             throw error(Response.Status.CONFLICT, "The reference " + product.getReference() + " already exists");
         }
+        if (negativePrice(product.getPrice())) {
+            throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+        }
         em.persist(product);
         return product;
     }
@@ -56,10 +61,14 @@ public class ProductRepository {
         if (referenceExists(data.getReference(), id)) {
             throw error(Response.Status.CONFLICT, "The reference " + data.getReference() + " already exists");
         }
+        if (negativePrice(data.getPrice())) {
+            throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+        }
         // The product is "managed": changes are saved automatically at commit
         product.setReference(data.getReference());
         product.setName(data.getName());
         product.setStock(data.getStock());
+        product.setPrice(data.getPrice());
         return Optional.of(product);
     }
 
@@ -99,6 +108,7 @@ public class ProductRepository {
                 .setParameter("reference", reference)
                 .getResultList();
         return found.stream().anyMatch(p -> !p.getId().equals(excludedId));
+        //return false;
     }
 
     private WebApplicationException error(Response.Status status, String message) {
@@ -106,5 +116,9 @@ public class ProductRepository {
                 .entity(Map.of("error", message))
                 .type(MediaType.APPLICATION_JSON)
                 .build());
+    }
+
+    private boolean negativePrice(BigDecimal price) {
+        return price.compareTo(BigDecimal.ZERO) < 0;
     }
 }

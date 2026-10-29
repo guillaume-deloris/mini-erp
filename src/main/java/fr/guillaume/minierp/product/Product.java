@@ -1,10 +1,8 @@
 package fr.guillaume.minierp.product;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 
 /**
  * A product of the catalog, mapped to the "product" table.
@@ -19,14 +17,17 @@ public class Product {
     private String reference;
     private String name;
     private int stock;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
 
     public Product() {
     }
 
-    public Product(String reference, String name, int stock) {
+    public Product(String reference, String name, int stock, BigDecimal price) {
         this.reference = reference;
         this.name = name;
         this.stock = stock;
+        this.price = price;
     }
 
     public Long getId() {
@@ -53,5 +54,7 @@ public class Product {
     public void setStock(int stock) {
         this.stock = stock;
     }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 }
 
