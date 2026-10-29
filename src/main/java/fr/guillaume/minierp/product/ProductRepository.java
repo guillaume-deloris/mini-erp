@@ -90,10 +90,14 @@ public class ProductRepository {
             return Optional.empty();
         }
         int newStock = product.getStock() + delta;
+
         if (newStock < 0) {
-            throw error(Response.Status.BAD_REQUEST, "Insufficient stock: " + product.getStock()
+            throw error(Response.Status.BAD_REQUEST, "Insufficient stock for product " + product.getReference()
+                    + " (" + product.getName() + "): " + product.getStock()
                     + " available, " + (-delta) + " requested");
         }
+
+
         product.setStock(newStock);
         return Optional.of(product);
     }
