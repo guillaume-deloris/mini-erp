@@ -1,10 +1,14 @@
 package fr.guillaume.minierp.product;
 
+import fr.guillaume.minierp.common.DuplicateReferenceException;
+import fr.guillaume.minierp.common.InsufficientStockException;
+import fr.guillaume.minierp.common.NegativePriceException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -43,12 +47,17 @@ public class ProductRepository {
     @Transactional
     public Product create(Product product) {
         if (referenceExists(product.getReference(), null)) {
-            throw error(Response.Status.CONFLICT, "The reference " + product.getReference() + " already exists");
+            //throw error(Response.Status.CONFLICT, "The reference " + product.getReference() + " already exists");
+            throw new DuplicateReferenceException(product.getReference());
         }
         if (negativePrice(product.getPrice())) {
-            throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+            //throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+            throw new NegativePriceException("The price must be a positive number");
+
         }
         em.persist(product);
+        // Sends the INSERT now: a constraint violation is raised here, inside the method
+        em.flush();
         return product;
     }
 
@@ -59,16 +68,20 @@ public class ProductRepository {
             return Optional.empty();
         }
         if (referenceExists(data.getReference(), id)) {
-            throw error(Response.Status.CONFLICT, "The reference " + data.getReference() + " already exists");
+            //throw error(Response.Status.CONFLICT, "The reference " + data.getReference() + " already exists");
+            throw new DuplicateReferenceException("The reference " + data.getReference() + " already exists");
         }
         if (negativePrice(data.getPrice())) {
-            throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+            //throw error(Response.Status.BAD_REQUEST, "The price must be a positive number");
+            throw new NegativePriceException("The price must be a positive number");
+
         }
         // The product is "managed": changes are saved automatically at commit
         product.setReference(data.getReference());
         product.setName(data.getName());
         product.setStock(data.getStock());
         product.setPrice(data.getPrice());
+        em.flush();
         return Optional.of(product);
     }
 
@@ -92,13 +105,15 @@ public class ProductRepository {
         int newStock = product.getStock() + delta;
 
         if (newStock < 0) {
-            throw error(Response.Status.BAD_REQUEST, "Insufficient stock for product " + product.getReference()
+            /*throw error(Response.Status.BAD_REQUEST, "Insufficient stock for product " + product.getReference()
                     + " (" + product.getName() + "): " + product.getStock()
-                    + " available, " + (-delta) + " requested");
+                    + " available, " + (-delta) + " requested");*/
+            throw new InsufficientStockException(product.getReference(), product.getStock(), -delta);
         }
 
 
         product.setStock(newStock);
+        em.flush();
         return Optional.of(product);
     }
 
@@ -115,12 +130,12 @@ public class ProductRepository {
         //return false;
     }
 
-    private WebApplicationException error(Response.Status status, String message) {
+    /*private WebApplicationException error(Response.Status status, String message) {
         return new WebApplicationException(Response.status(status)
                 .entity(Map.of("error", message))
                 .type(MediaType.APPLICATION_JSON)
                 .build());
-    }
+    }*/
 
     private boolean negativePrice(BigDecimal price) {
         return price.compareTo(BigDecimal.ZERO) < 0;

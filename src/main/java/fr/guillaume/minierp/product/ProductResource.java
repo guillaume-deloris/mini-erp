@@ -1,5 +1,9 @@
 package fr.guillaume.minierp.product;
 
+import fr.guillaume.minierp.common.InvalidStatusException;
+import fr.guillaume.minierp.common.MissingDeltaParameterException;
+import fr.guillaume.minierp.common.MissingNameNegativeStockException;
+import fr.guillaume.minierp.common.ProductNotFoundException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -30,7 +34,7 @@ public class ProductResource {
     @Path ("/{id}")
     public Product get(@PathParam("id") Long id) {
         return repository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Product "+ id + "not found."));
+            .orElseThrow(() -> new ProductNotFoundException("Product "+ id + "not found."));
     }
 
     // GET /api/products            -> all products
@@ -49,11 +53,12 @@ public class ProductResource {
     @POST
     public Response create(Product product, @Context UriInfo uriInfo) {
         if (product.getStock() < 0 || product.getName() == null) {
-            throw new BadRequestException(
+            /*throw new BadRequestException(
                     Response.status(Response.Status.BAD_REQUEST)
                             .entity(Map.of("error", "Name is required and stock must be positive"))
                             .type(MediaType.APPLICATION_JSON)
-                            .build());
+                            .build());*/
+            throw new MissingNameNegativeStockException("Name is required and stock must be positive");
         }
         Product created = repository.create(product);
         URI location = uriInfo.getAbsolutePathBuilder()
@@ -68,14 +73,15 @@ public class ProductResource {
     @Path("/{id}/stock")
     public Product updateStock(@PathParam("id") Long id, @QueryParam("delta") Integer delta) {
         if (delta == null) {
-            throw new BadRequestException(
+            /*throw new BadRequestException(
                     Response.status(Response.Status.BAD_REQUEST)
                             .entity(Map.of("error", "The delta parameter is required"))
                             .type(MediaType.APPLICATION_JSON)
-                            .build());
+                            .build());*/
+            throw new MissingDeltaParameterException("The delta parameter is required");
         }
         return repository.updateStock(id, delta)
-                .orElseThrow(() -> new NotFoundException("Product " + id + " not found."));
+                .orElseThrow(() -> new ProductNotFoundException("Product " + id + " not found."));
     }
 
     //PUT /api/products/1
@@ -85,7 +91,7 @@ public class ProductResource {
         //orElseThrow(() -> ...) : si l’Optional est vide, on lance l’exception.
         // () -> ... est une lambda, l’équivalent d’une fonction fléchée en JavaScript.
         return repository.update(id, product)
-            .orElseThrow(() -> new NotFoundException("Product " + id + " not found."));
+            .orElseThrow(() -> new ProductNotFoundException("Product " + id + " not found."));
     }
 
     //DELETE /api/products/1
@@ -93,7 +99,7 @@ public class ProductResource {
     @Path("/{id}")
     public Response delete(@PathParam("id") Long id) {
         if (!repository.delete(id)) {
-            throw new NotFoundException("Product "+ id + "not found.");
+            throw new ProductNotFoundException("Product "+ id + " not found.");
         }
         return Response.noContent().build();
     }

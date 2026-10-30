@@ -1,5 +1,9 @@
 package fr.guillaume.minierp.order;
 
+import fr.guillaume.minierp.common.BusinessException;
+import fr.guillaume.minierp.common.InvalidDataException;
+import fr.guillaume.minierp.common.InvalidStatusException;
+import fr.guillaume.minierp.common.ProductNotFoundException;
 import fr.guillaume.minierp.product.Product;
 import fr.guillaume.minierp.product.ProductRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,7 +47,8 @@ public class OrderService {
     @Transactional
     public CustomerOrder create(CreateOrderRequest request) {
         if (request.lines() == null || request.lines().isEmpty()) {
-            throw badRequest("An order needs at least one line");
+            //throw badRequest("An order needs at least one line");
+            throw new InvalidDataException("An order needs at least one line");
         }
         CustomerOrder order = new CustomerOrder();
         order.setReference(request.reference());
@@ -52,7 +57,8 @@ public class OrderService {
         for (CreateOrderRequest.LineRequest lineRequest : request.lines()) {
             Product product = em.find(Product.class, lineRequest.productId());
             if (product == null) {
-                throw badRequest("Product " + lineRequest.productId() + " not found");
+                //throw badRequest("Product " + lineRequest.productId() + " not found");
+                throw new ProductNotFoundException("Product " + lineRequest.productId() + " not found");
             }
             OrderLine line = new OrderLine();
             line.setProduct(product);
@@ -75,10 +81,13 @@ public class OrderService {
             return Optional.empty();
         }
         if (order.getStatus() != OrderStatus.DRAFT) {
-            throw new WebApplicationException(Response.status(Response.Status.CONFLICT)
+            /*throw new WebApplicationException(Response.status(Response.Status.CONFLICT)
                     .entity(Map.of("error", "Order " + order.getReference() + " is already " + order.getStatus()))
                     .type(MediaType.APPLICATION_JSON)
-                    .build());
+                    .build());*/
+
+            throw new InvalidStatusException("Order " + order.getReference() + " is already " + order.getStatus());
+
         }
         // Reuses the stock rule: lock the row, refuse a negative stock
         for (OrderLine line : order.getLines()) {
@@ -88,10 +97,10 @@ public class OrderService {
         return Optional.of(order);
     }
 
-    private BadRequestException badRequest(String message) {
+    /*private BadRequestException badRequest(String message) {
         return new BadRequestException(Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", message))
                 .type(MediaType.APPLICATION_JSON)
                 .build());
-    }
+    }*/
 }
