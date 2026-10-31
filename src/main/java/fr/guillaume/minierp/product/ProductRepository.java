@@ -118,6 +118,27 @@ public class ProductRepository {
     }
 
     /**
+     * Creates or updates a product from LN data. Idempotent: importing twice gives the same result.
+     */
+    @Transactional
+    public Product importItem(String reference, String name) {
+        List<Product> found = em.createQuery("SELECT p FROM Product p WHERE p.reference = :reference", Product.class)
+                .setParameter("reference", reference)
+                .getResultList();
+        if (found.isEmpty()) {
+            Product product = new Product(reference, name, 0, BigDecimal.ZERO);
+            product.setPrice(BigDecimal.ZERO);
+            em.persist(product);
+            em.flush();
+            return product;
+        }
+        // Existing product: LN is the master of the description, stock and price stay local
+        Product product = found.get(0);
+        product.setName(name);
+        return product;
+    }
+
+    /**
      * Checks whether another product already uses this reference.
      * excludedId: id of the product being updated, null for a creation.
      */

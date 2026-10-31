@@ -4,6 +4,8 @@ import fr.guillaume.minierp.common.InvalidStatusException;
 import fr.guillaume.minierp.common.MissingDeltaParameterException;
 import fr.guillaume.minierp.common.MissingNameNegativeStockException;
 import fr.guillaume.minierp.common.ProductNotFoundException;
+import fr.guillaume.minierp.ln.LnClient;
+import fr.guillaume.minierp.ln.LnItem;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -102,5 +104,19 @@ public class ProductResource {
             throw new ProductNotFoundException("Product "+ id + " not found.");
         }
         return Response.noContent().build();
+    }
+
+    @Inject
+    private LnClient lnClient;
+
+    // POST /api/products/import/P010
+    @POST
+    @Path("/import/{itemId}")
+    //@QueryParam("slow") boolean slow)
+    public Product importFromLn(@PathParam("itemId") String itemId,
+                                @QueryParam("fail") boolean fail) {
+        LnItem item = lnClient.fetchItem(itemId, fail)
+                .orElseThrow(() -> new NotFoundException("Item " + itemId + " not found in LN"));
+        return repository.importItem(item.id(), item.description());
     }
 }

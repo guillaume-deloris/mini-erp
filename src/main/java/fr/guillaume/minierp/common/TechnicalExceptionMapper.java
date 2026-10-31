@@ -30,6 +30,11 @@ public class TechnicalExceptionMapper implements ExceptionMapper<Exception> {
             }
             return json(response.getStatus(), e.getMessage());
         }
+        // External system failure: 502 Bad Gateway, logged because someone must look at it
+        if (e instanceof ExternalServiceException) {
+            LOG.log(Level.WARNING, "External service error", e);
+            return json(502, e.getMessage());
+        }
         // Concurrent creation that passed the Java check: the database has the last word
         if (isUniqueViolation(e)) {
             return json(409, "This data already exists");
