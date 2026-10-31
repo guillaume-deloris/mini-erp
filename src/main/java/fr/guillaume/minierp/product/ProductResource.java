@@ -112,10 +112,10 @@ public class ProductResource {
     // POST /api/products/import/P010
     @POST
     @Path("/import/{itemId}")
-    //@QueryParam("slow") boolean slow)
     public Product importFromLn(@PathParam("itemId") String itemId,
-                                @QueryParam("fail") boolean fail) {
-        LnItem item = lnClient.fetchItem(itemId, fail)
+                                @QueryParam("fail") boolean fail,
+                                @QueryParam("slow") boolean slow) {
+        LnItem item = lnClient.fetchItem(itemId, fail, slow)
                 .orElseThrow(() -> new NotFoundException("Item " + itemId + " not found in LN"));
         return repository.importItem(item.id(), item.description());
     }

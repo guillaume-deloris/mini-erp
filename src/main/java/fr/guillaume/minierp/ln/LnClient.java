@@ -10,6 +10,8 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.StringReader;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,6 +29,7 @@ public class LnClient {
     // In real life: in the server configuration, never in the code
     private static final String BASE_URL = "http://localhost:8080/mini-erp/api/fake-ln";
 
+
     private Client client;
 
     // A Client is expensive to create: one for the whole application
@@ -43,11 +46,12 @@ public class LnClient {
         client.close();
     }
 
-    public Optional<LnItem> fetchItem(String itemId, boolean simulateFailure) {
+    public Optional<LnItem> fetchItem(String itemId, boolean simulateFailure, boolean simulateSlowness) {
         try (Response response = client.target(BASE_URL)
                 .path("items")
                 .path(itemId)
                 .queryParam("fail", simulateFailure)
+                .queryParam("slow", simulateSlowness)
                 .request(MediaType.APPLICATION_XML)
                 .get()) {
             int status = response.getStatus();
@@ -60,6 +64,12 @@ public class LnClient {
             return Optional.of(parse(response.readEntity(String.class)));
         } catch (ProcessingException e) {
             // Connection refused, timeout...
+            if (e.getCause() instanceof SocketTimeoutException) {
+                throw new ExternalServiceException("LN did not answer in time", e);
+            }
+            if (e.getCause() instanceof ConnectException) {
+                throw new ExternalServiceException("LN refused the connection (service stopped?)", e);
+            }
             throw new ExternalServiceException("LN is unreachable", e);
         }
     }

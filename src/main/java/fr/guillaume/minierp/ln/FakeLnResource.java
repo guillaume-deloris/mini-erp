@@ -23,7 +23,12 @@ public class FakeLnResource {
     @GET
     @Path("/{itemId}")
     @Produces(MediaType.APPLICATION_XML)
-    public Response getItem(@PathParam("itemId") String itemId, @QueryParam("fail") boolean fail) {
+    //@QueryParam("slow") boolean slow)
+    //@QueryParam("slow") boolean slow)
+    public Response getItem(@PathParam("itemId") String itemId, @QueryParam("fail") boolean fail, @QueryParam("slow") boolean slow) throws InterruptedException {
+        if (slow) {
+            Thread.sleep(10000);
+        }
         if (fail) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
         }
